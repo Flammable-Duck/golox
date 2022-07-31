@@ -60,6 +60,7 @@ type Token struct {
 	Position Position
 	Type     TokenType
 	Lexeme   string
+    Literal interface{}
 }
 
 func NewToken(t TokenType, p Position) Token {

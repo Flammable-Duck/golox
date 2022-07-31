@@ -3,6 +3,8 @@ package scanner
 import (
 	"fmt"
 	"golox/tokens"
+	"strconv"
+	"strings"
 )
 
 type Scanner struct {
@@ -168,14 +170,17 @@ func (s *Scanner) string() (tokens.Token, error) {
 	}
 	s.advance()
 	value = string(s.src[s.start+1 : s.current-1])
-	tok := tokens.NewTokenLiteral(tokens.String, value,
-		s.getPosition())
+	tok := tokens.Token{
+		Position: s.getPosition(),
+		Type:     tokens.String,
+		Lexeme:   value,
+		Literal:  value,
+	}
 	return tok, err
 }
 
 func (s *Scanner) number() (tokens.Token, error) {
 	var err error = nil
-	var value string = ""
 	for isDigit(s.peek()) && !s.isAtEnd() {
 		s.advance()
 	}
@@ -186,47 +191,58 @@ func (s *Scanner) number() (tokens.Token, error) {
 		s.advance()
 	}
 	// s.advance()
-	value = string(s.src[s.start:s.current])
-	tok := tokens.NewTokenLiteral(tokens.Number, value,
-		s.getPosition())
+    lexme := string(s.src[s.start:s.current])
+    var literal interface{}
+    if strings.ContainsRune(lexme, '.') {
+        literal, _ = strconv.ParseFloat(lexme, 64)
+    } else {
+        literal, _ = strconv.Atoi(lexme)
+    }
+
+	tok := tokens.Token{
+		Position: s.getPosition(),
+		Type:     tokens.String,
+		Lexeme:   lexme,
+		Literal:  literal,
+	}
 	return tok, err
 }
 
 func (s *Scanner) identifier() (tokens.Token, error) {
 	var err error = nil
 	var value string = ""
-    var tok tokens.Token
-    var identifiers = map[string]tokens.TokenType {
-        "and": tokens.And,
-        "class": tokens.Class,
-        "else": tokens.Class,
-        "false": tokens.Class,
-        "for": tokens.For,
-        "fun": tokens.Fun,
-        "if": tokens.If,
-        "nil": tokens.Nil,
-        "or": tokens.Or,
-        "print": tokens.Print,
-        "return": tokens.Return,
-        "super": tokens.Super,
-        "this": tokens.This,
-        "true": tokens.True,
-        "while": tokens.While,
-    }
+	var tok tokens.Token
+	var identifiers = map[string]tokens.TokenType{
+		"and":    tokens.And,
+		"class":  tokens.Class,
+		"else":   tokens.Class,
+		"false":  tokens.Class,
+		"for":    tokens.For,
+		"fun":    tokens.Fun,
+		"if":     tokens.If,
+		"nil":    tokens.Nil,
+		"or":     tokens.Or,
+		"print":  tokens.Print,
+		"return": tokens.Return,
+		"super":  tokens.Super,
+		"this":   tokens.This,
+		"true":   tokens.True,
+		"while":  tokens.While,
+	}
 
 	for isAlpha(s.peek()) && !s.isAtEnd() {
 		s.advance()
 	}
 
 	value = string(s.src[s.start:s.current])
-    keyword, exists := identifiers[value]
-    if exists {
-        tok = tokens.NewTokenLiteral(keyword, value,
-            s.getPosition())
-    } else {
-        tok = tokens.NewTokenLiteral(tokens.Identifier, value,
-            s.getPosition())
-    }
+	keyword, exists := identifiers[value]
+	if exists {
+		tok = tokens.NewTokenLiteral(keyword, value,
+			s.getPosition())
+	} else {
+		tok = tokens.NewTokenLiteral(tokens.Identifier, value,
+			s.getPosition())
+	}
 	return tok, err
 }
 
@@ -265,7 +281,7 @@ func (s *Scanner) advance() rune {
 }
 
 func (s *Scanner) error(e string) error {
-    pos := s.getPosition()
+	pos := s.getPosition()
 	err := fmt.Errorf("%d:%d: %s", pos.Row, pos.Col, e)
 	s.errors = append(s.errors, err)
 	return err
@@ -278,16 +294,16 @@ func (s *Scanner) newToken(t tokens.TokenType) tokens.Token {
 
 // this is a slow and dumb and bad way to do this but ¯\_(ツ)_/¯
 func (s *Scanner) getPosition() tokens.Position {
-    p := tokens.Position{Row: 1, Col: 1}
-    for i := 0;  i < s.start; i++{
-        if s.src[i] == '\n' {
-            p.Row++
-            p.Col=1
-        } else {
-            p.Col++
-        }
-    }
-    return p
+	p := tokens.Position{Row: 1, Col: 1}
+	for i := 0; i < s.start; i++ {
+		if s.src[i] == '\n' {
+			p.Row++
+			p.Col = 1
+		} else {
+			p.Col++
+		}
+	}
+	return p
 }
 
 func (s *Scanner) Errors() []error {
