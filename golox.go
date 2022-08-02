@@ -53,6 +53,9 @@ func runPrompt() {
 	for {
 		fmt.Print("> ")
 		s.Scan()
+        if len(s.Bytes()) == 0 {
+            os.Exit(0)
+        }
 		line = s.Text()
 		run(line)
 	}
@@ -75,5 +78,5 @@ func main() {
 	} else {
 		fmt.Println("run without arguments to enter a repl, or with a filename to run a file")
 	}
-    // run("1+2*3")
+    // run("\"apple")
 }

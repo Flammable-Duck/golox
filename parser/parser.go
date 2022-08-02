@@ -91,7 +91,7 @@ func (p *Parser) unary() Expr {
 
 func (p *Parser) primary() Expr {
 
-	var expr Expr = nil
+	var expr Expr
 	if p.match(tokens.False) {
 		expr = Literal{Value: false}
 

@@ -13,7 +13,9 @@ type Scanner struct {
 	errors  []error
 	start   int
 	current int
+    scanError struct {}
 }
+
 
 func NewScanner(source string) Scanner {
 	return Scanner{
@@ -160,15 +162,17 @@ func (s *Scanner) Read() (tokens.Token, error) {
 }
 
 func (s *Scanner) string() (tokens.Token, error) {
-	var err error = nil
+	var err error
 	var value string = ""
 	for s.peek() != '"' && !s.isAtEnd() {
 		s.advance()
 	}
 	if s.isAtEnd() && s.peek() != '"' {
 		err = s.error("unterminated string")
-	}
-	s.advance()
+        return tokens.Token{}, err
+	} else {
+        s.advance()
+    }
 	value = string(s.src[s.start+1 : s.current-1])
 	tok := tokens.Token{
 		Position: s.getPosition(),
@@ -215,8 +219,8 @@ func (s *Scanner) identifier() (tokens.Token, error) {
 	var identifiers = map[string]tokens.TokenType{
 		"and":    tokens.And,
 		"class":  tokens.Class,
-		"else":   tokens.Class,
-		"false":  tokens.Class,
+		"else":   tokens.Else,
+		"false":  tokens.False,
 		"for":    tokens.For,
 		"fun":    tokens.Fun,
 		"if":     tokens.If,

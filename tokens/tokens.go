@@ -63,7 +63,7 @@ type Token struct {
     Literal interface{}
 }
 
-func NewToken(t TokenType, p Position) Token {
+func stringFromTokenType(t TokenType) string {
 	var lexme string
 	switch t {
 	case LeftParen:
@@ -137,13 +137,19 @@ func NewToken(t TokenType, p Position) Token {
 	case While:
 		lexme = "while"
 	case Eof:
-		// lexme = "\u0000"
-		lexme = "!EOF!"
-
-	case Identifier, String, Number:
-		// use NewTokenLiteral to set token literals lexmes instead
+		lexme = "\u0000"
+	case Identifier:
+        lexme= "<identifier>"
+    case String:
+        lexme= "<string>"
+    case Number:
+        lexme= "<number>"
 	}
-	return NewTokenLiteral(t, lexme, p)
+    return lexme
+}
+
+func NewToken(t TokenType, p Position) Token {
+	return NewTokenLiteral(t, stringFromTokenType(t), p)
 }
 
 func NewTokenLiteral(t TokenType, lexme string, p Position) Token {

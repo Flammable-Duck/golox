@@ -13,6 +13,8 @@ func (p *astPrinter) VisitLiteral(l parser.Literal) interface{} {
     switch l.Value.(type) {
     case nil:
         return "nil"
+    case string:
+        return fmt.Sprintf("\"%s\"", l.Value)
     default:
         return fmt.Sprintf("%v", l.Value)
     }
