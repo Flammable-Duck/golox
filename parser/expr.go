@@ -16,7 +16,6 @@ type ExprVisitor interface {
 }
 
 type Literal struct {
-	// value tokens.TokenType
 	Value interface{}
 }
 
@@ -34,7 +33,7 @@ func (g Grouping) Accept(v ExprVisitor) interface{} {
 
 type Unary struct {
 	Expression Expr
-	Operator   tokens.Token
+	Operator   tokens.TokenType
 }
 
 func (u Unary) Accept(v ExprVisitor) interface{} {
@@ -43,7 +42,7 @@ func (u Unary) Accept(v ExprVisitor) interface{} {
 
 type Binary struct {
 	Left     Expr
-	Operator tokens.Token
+	Operator tokens.TokenType
 	Right    Expr
 }
 

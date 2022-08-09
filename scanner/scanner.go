@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"golox/tokens"
 	"strconv"
-	"strings"
 )
 
 type Scanner struct {
@@ -196,16 +195,12 @@ func (s *Scanner) number() (tokens.Token, error) {
 	}
 	// s.advance()
     lexme := string(s.src[s.start:s.current])
-    var literal interface{}
-    if strings.ContainsRune(lexme, '.') {
-        literal, _ = strconv.ParseFloat(lexme, 64)
-    } else {
-        literal, _ = strconv.Atoi(lexme)
-    }
+    var literal float64
+    literal, _ = strconv.ParseFloat(lexme, 64)
 
 	tok := tokens.Token{
 		Position: s.getPosition(),
-		Type:     tokens.String,
+		Type:     tokens.Number,
 		Lexeme:   lexme,
 		Literal:  literal,
 	}

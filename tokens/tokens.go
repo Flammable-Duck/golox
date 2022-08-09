@@ -60,96 +60,56 @@ type Token struct {
 	Position Position
 	Type     TokenType
 	Lexeme   string
-    Literal interface{}
+	Literal  interface{}
 }
 
-func stringFromTokenType(t TokenType) string {
-	var lexme string
-	switch t {
-	case LeftParen:
-		lexme = "("
-	case RightParen:
-		lexme = ")"
-	case LeftBrace:
-		lexme = "{"
-	case RightBrace:
-		lexme = "}"
-	case Comma:
-		lexme = ","
-	case Dot:
-		lexme = "."
-	case Minus:
-		lexme = "-"
-	case Plus:
-		lexme = "+"
-	case Semicolon:
-		lexme = ";"
-	case Slash:
-		lexme = "/"
-	case Star:
-		lexme = "*"
-	case Bang:
-		lexme = "!"
-	case BangEqual:
-		lexme = "!="
-	case Equal:
-		lexme = "="
-	case EqualEqual:
-		lexme = "=="
-	case Greater:
-		lexme = ">"
-	case GreaterEqual:
-		lexme = ">="
-	case Less:
-		lexme = "<"
-	case LessEqual:
-		lexme = "<="
-	case And:
-		lexme = "and"
-	case Class:
-		lexme = "class"
-	case Else:
-		lexme = "Else"
-	case False:
-		lexme = "false"
-	case Fun:
-		lexme = "fun"
-	case For:
-		lexme = "for"
-	case If:
-		lexme = "if"
-	case Nil:
-		lexme = "Nil"
-	case Or:
-		lexme = "or"
-	case Print:
-		lexme = "print"
-	case Return:
-		lexme = "Return"
-	case Super:
-		lexme = "super"
-	case This:
-		lexme = "this"
-	case True:
-		lexme = "true"
-	case Var:
-		lexme = "var"
-	case While:
-		lexme = "while"
-	case Eof:
-		lexme = "\u0000"
-	case Identifier:
-        lexme= "<identifier>"
-    case String:
-        lexme= "<string>"
-    case Number:
-        lexme= "<number>"
+func (t TokenType) String() string {
+	var lexmes = map[TokenType]string{
+		LeftParen:    "(",
+		RightParen:   ")",
+		LeftBrace:    "{",
+		RightBrace:   "}",
+		Comma:        ",",
+		Dot:          ".",
+		Minus:        "-",
+		Plus:         "+",
+		Semicolon:    ";",
+		Slash:        "/",
+		Star:         "*",
+		Bang:         "!",
+		BangEqual:    "!=",
+		Equal:        "=",
+		EqualEqual:   "==",
+		Greater:      ">",
+		GreaterEqual: ">=",
+		Less:         "<",
+		LessEqual:    "<=",
+		And:          "and",
+		Class:        "class",
+		Else:         "Else",
+		False:        "false",
+		Fun:          "fun",
+		For:          "for",
+		If:           "if",
+		Nil:          "Nil",
+		Or:           "or",
+		Print:        "print",
+		Return:       "Return",
+		Super:        "super",
+		This:         "this",
+		True:         "true",
+		Var:          "var",
+		While:        "while",
+		Eof:          "<EOF>",
+		Identifier:   "<identifier>",
+		String:       "<string>",
+		Number:       "<number>",
 	}
-    return lexme
+	return lexmes[t]
 }
 
 func NewToken(t TokenType, p Position) Token {
-	return NewTokenLiteral(t, stringFromTokenType(t), p)
+	return NewTokenLiteral(t, t.String(), p)
 }
 
 func NewTokenLiteral(t TokenType, lexme string, p Position) Token {

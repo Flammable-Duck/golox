@@ -3,48 +3,45 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"golox/scanner"
-	"golox/tokens"
+	"golox/interpreter"
 	"golox/parser"
 	"golox/parser/astPrinter"
+	"golox/scanner"
+	"golox/tokens"
 	"io/ioutil"
 	"os"
 )
 
-func run(input string) {
+func run(input string) error {
 	scan := scanner.NewScanner(input)
-    var toks []tokens.Token
+	var toks []tokens.Token
 	for {
 		t, _ := scan.Read()
-        toks = append(toks, t)
+		toks = append(toks, t)
 		if t.Type == tokens.Eof {
 			break
 		}
-
-		// switch t.Type {
-		// case tokens.String:
-		// 	fmt.Printf("token: \"%s\" \n", t.Lexeme)
-		// default:
-  //           fmt.Printf("%d:%d: %s \n", t.Position.Row, t.Position.Col, t.Lexeme)
-		// }
 	}
+
+	for _, t := range toks {
+		fmt.Printf("token: %s:%s\n", t.Type.String(), t.Lexeme)
+	}
+
 	if len(scan.Errors()) != 0 {
+		var errs string
 		for _, err := range scan.Errors() {
-			fmt.Println(err.Error())
-
+			errs += err.Error() + "\n"
 		}
-        return
+		return fmt.Errorf(errs)
 	}
 
-    p := parser.New(toks)
-    expr := p.Parse()
-    if expr != nil {
-        astPrinter.PrintAst(expr)
-    } else {
-        fmt.Println("Parse Error: expected expression")
-        return
-    }
+	expr, err := parser.Parse(toks)
+	if err != nil {
+		return err
+	}
+	astPrinter.PrintAst(expr)
 
+	return interpreter.Interpret(expr)
 }
 
 func runPrompt() {
@@ -53,11 +50,14 @@ func runPrompt() {
 	for {
 		fmt.Print("> ")
 		s.Scan()
-        if len(s.Bytes()) == 0 {
-            os.Exit(0)
-        }
+		if len(s.Bytes()) == 0 {
+			os.Exit(0)
+		}
 		line = s.Text()
-		run(line)
+		err := run(line)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
 	}
 }
 
@@ -78,5 +78,7 @@ func main() {
 	} else {
 		fmt.Println("run without arguments to enter a repl, or with a filename to run a file")
 	}
-    // run("\"apple")
+	// if err := run("1+1"); err != nil {
+	// 	fmt.Println(err)
+	// }
 }

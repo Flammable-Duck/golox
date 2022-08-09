@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"fmt"
 	"golox/tokens"
 )
 
@@ -10,86 +9,120 @@ type Parser struct {
 	current int
 }
 
-func New(tokens []tokens.Token) Parser {
-	return Parser{tokens: tokens, current: 0}
+func Parse(tokens []tokens.Token) (Expr, error) {
+    p := Parser{tokens: tokens, current: 0}
+    return p.expression()
 }
-
-func (p *Parser) Parse() Expr {
-    expr := p.expression()
-    return expr }
 
 // rules
 
-func (p *Parser) expression() Expr {
+func (p *Parser) expression() (Expr, error) {
 	return p.equality()
 }
 
-func (p *Parser) equality() Expr {
-	expr := p.comparison()
+func (p *Parser) equality() (Expr, error) {
+	expr, err := p.comparison()
+    if err != nil {
+        return expr, err
+    }
 	for p.match(tokens.BangEqual, tokens.EqualEqual) {
+        op := p.previous().Type
+        right, err := p.comparison()
+        if err != nil {
+            return nil, err
+        }
 		expr = Binary{
 			Left:     expr,
-			Operator: p.previous(),
-			Right:    p.comparison(),
+			Operator: op,
+			Right:    right,
 		}
 	}
-	return expr
+	return expr, nil
 }
 
-func (p *Parser) comparison() Expr {
-	expr := p.term()
+func (p *Parser) comparison() (Expr, error) {
+	expr, err := p.term()
+    if err != nil {
+        return expr, err
+    }
 
 	for p.match(tokens.Greater, tokens.GreaterEqual,
 		tokens.Less, tokens.LessEqual) {
+        op := p.previous().Type
+        right, err := p.comparison()
+        if err != nil {
+            return nil, err
+        }
 		expr = Binary{
 			Left:     expr,
-			Operator: p.previous(),
-			Right:    p.term(),
+			Operator: op,
+			Right:    right,
 		}
 	}
 
-	return expr
+	return expr, nil
 }
 
-func (p *Parser) term() Expr {
-	expr := p.factor()
+func (p *Parser) term() (Expr, error) {
+	expr, err := p.factor()
+    if err != nil {
+        return expr, err
+    }
 
 	for p.match(tokens.Minus, tokens.Plus) {
+        op := p.previous().Type
+        right, err := p.factor()
+        if err != nil {
+            return nil, err
+        }
 		expr = Binary{
 			Left:     expr,
-			Operator: p.previous(),
-			Right:    p.factor(),
+			Operator: op,
+			Right:    right,
 		}
 	}
 
-	return expr
+	return expr, nil
 }
 
-func (p *Parser) factor() Expr {
-	expr := p.unary()
+func (p *Parser) factor() (Expr, error) {
+	expr, err := p.unary()
+    if err != nil {
+        return expr, err
+    }
 
 	for p.match(tokens.Slash, tokens.Star) {
+        op := p.previous().Type
+        right, err := p.unary()
+        if err != nil {
+            return nil, err
+        }
 		expr = Binary{
 			Left:     expr,
-			Operator: p.previous(),
-			Right:    p.unary(),
+			Operator: op,
+			Right:    right,
 		}
 	}
 
-	return expr
+	return expr, nil
 }
 
-func (p *Parser) unary() Expr {
+func (p *Parser) unary() (Expr, error) {
 	if p.match(tokens.Bang, tokens.Minus) {
+        op := p.previous().Type
+        expr, err := p.unary()
+        if err != nil {
+            return nil, err
+        }
 		return Unary{
-			Operator:   p.previous(),
-			Expression: p.unary(),
-		}
+			Operator:   op,
+			Expression: expr,
+		}, nil
 	}
 	return p.primary()
 }
 
-func (p *Parser) primary() Expr {
+func (p *Parser) primary() (Expr, error) {
 
 	var expr Expr
 	if p.match(tokens.False) {
@@ -105,14 +138,17 @@ func (p *Parser) primary() Expr {
 		expr = Literal{Value: p.previous().Literal}
 
 	} else if p.match(tokens.LeftParen) {
-		expr = p.expression()
-		_, err := p.consume(tokens.RightParen, "Expect ')' after expression")
+        expr, err := p.expression()
+        if err != nil {
+            return expr, err
+        }
+		_ , err = p.consume(tokens.RightParen, "Expect ')' after expression")
 		if err != nil {
-			fmt.Println(err.Error())
+            return nil, err
 		}
 	}
     
-	return expr
+	return expr, nil
 }
 
 // error handling

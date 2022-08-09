@@ -1,9 +1,9 @@
 package astPrinter
 
 import (
-    "fmt"
-    "golox/parser"
-    )
+	"fmt"
+	"golox/parser"
+)
 
 type astPrinter struct {
     depth int
@@ -28,7 +28,7 @@ func (p *astPrinter) VisitGrouping(g parser.Grouping) interface{} {
 
 func (p *astPrinter) VisitUnary(u parser.Unary) interface{} {
     str := fmt.Sprintf("(%s %s)\n",
-        u.Operator.Lexeme,
+        u.Operator.String(),
         u.Expression.Accept(p))
     p.depth--
     return str
@@ -37,7 +37,7 @@ func (p *astPrinter) VisitUnary(u parser.Unary) interface{} {
 func (p *astPrinter) VisitBinary(b parser.Binary) interface{} {
     p.depth++
     str := fmt.Sprintf("(%s %s",
-        b.Operator.Lexeme,
+        b.Operator.String(),
         b.Left.Accept(p))
 
     switch b.Right.(type) {

@@ -10,7 +10,7 @@ type parseError struct {
 	Reason string
 }
 
-func (e *parseError) Error() string {
+func (e parseError) Error() string {
 	if e.Token.Type == tokens.Eof {
 		return fmt.Sprintf("%d:%d parse error at end: %s",
 			e.Token.Position.Row,
