@@ -6,19 +6,31 @@ import (
 	"golox/tokens"
 )
 
-func Interpret(expr parser.Expr) error {
+func Interpret(statments []parser.Stmt) error {
     var i interpreter
-    res := expr.Accept(&i)
-    err, isError := res.(RuntimeException)
-    if isError {
-        return err
+    for _, stmt := range statments {
+        res := stmt.Accept(&i)
+        err, isError := res.(RuntimeException)
+        if isError {
+            return err
+        }
+        // fmt.Printf("\u001b[2m] %v\u001b[0m\n", res)
     }
-    fmt.Println(res)
     return nil
 }
 
 type interpreter struct {
 
+}
+
+func (i *interpreter) VisitPrintStmt(prnt parser.PrintStmt) interface{} {
+    value := prnt.Expression.Accept(i)
+    fmt.Printf("%v\n", value)
+    return nil
+}
+
+func (i *interpreter) VisitExprStmt(exprstmt parser.ExprStmt) interface{} {
+    return exprstmt.Expression.Accept(i)
 }
 
 func (i *interpreter) VisitLiteral(l parser.Literal) interface{} {
@@ -72,11 +84,14 @@ func (i *interpreter) VisitBinary(b parser.Binary) interface{} {
         return l - r
 
     case tokens.Slash:
-        l, lok := left.(float64)
-        r, rok := right.(float64)
-        if !lok || !rok {
+        l, lOk := left.(float64)
+        r, rOk := right.(float64)
+        if !lOk || !rOk {
             return NewRuntimeException(
                 fmt.Sprintf("cannot preform '/' on %T and  %T", left, right))
+        }
+        if r == 0 {
+            return NewRuntimeException("cannot divide by zero")
         }
         return l / r
 

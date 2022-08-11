@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"golox/interpreter"
 	"golox/parser"
-	"golox/parser/astPrinter"
+	// "golox/parser/astPrinter"
 	"golox/scanner"
 	"golox/tokens"
 	"io/ioutil"
@@ -23,9 +23,9 @@ func run(input string) error {
 		}
 	}
 
-	for _, t := range toks {
-		fmt.Printf("token: %s:%s\n", t.Type.String(), t.Lexeme)
-	}
+	// for _, t := range toks {
+	// 	fmt.Printf("token: %s:%s\n", t.Type.String(), t.Lexeme)
+	// }
 
 	if len(scan.Errors()) != 0 {
 		var errs string
@@ -35,13 +35,14 @@ func run(input string) error {
 		return fmt.Errorf(errs)
 	}
 
-	expr, err := parser.Parse(toks)
-	if err != nil {
-		return err
-	}
-	astPrinter.PrintAst(expr)
 
-	return interpreter.Interpret(expr)
+	stmts := parser.Parse(toks)
+    // for _, stmt := range stmts {
+    //     fmt.Printf("%v\n", stmt)
+    //     astPrinter.PrintStmt(stmt)
+    // }
+
+	return interpreter.Interpret(stmts)
 }
 
 func runPrompt() {
@@ -57,6 +58,7 @@ func runPrompt() {
 		err := run(line)
 		if err != nil {
 			fmt.Println(err.Error())
+            // fmt.Printf("\u001b[2m%s\n", err.Error())
 		}
 	}
 }

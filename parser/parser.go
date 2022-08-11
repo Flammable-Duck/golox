@@ -1,26 +1,72 @@
 package parser
 
 import (
+	"fmt"
 	"golox/tokens"
 )
 
-type Parser struct {
+type parser struct {
 	tokens  []tokens.Token
 	current int
 }
 
-func Parse(tokens []tokens.Token) (Expr, error) {
-    p := Parser{tokens: tokens, current: 0}
-    return p.expression()
+func Parse(tokens []tokens.Token) []Stmt {
+    p := parser{tokens: tokens, current: 0}
+    var statments []Stmt
+    for !p.isAtEnd() {
+        stmt, err := p.statment()
+        if err != nil {
+            // fmt.Printf("%s\n", err.Error())
+            fmt.Printf("\u001b[31m%s\u001b[39m\n", err.Error())
+            p.synchronize()
+        } else {
+            statments = append(statments, stmt)
+        }
+    }
+    return statments
 }
 
 // rules
 
-func (p *Parser) expression() (Expr, error) {
+func (p *parser) statment() (Stmt, error) {
+    if p.match(tokens.Print) {
+        return p.printStatement()
+    }
+
+    res, err :=  p.expressionStatement()
+    return res, err
+}
+
+func (p *parser) printStatement() (Stmt, error) {
+    value, err := p.expression()
+    if err != nil {
+        return nil, err
+    }
+    _, err = p.consume(tokens.Semicolon, "Expected ';' after expression.")
+    if err != nil {
+        return nil, err
+    }
+
+    return PrintStmt{Expression: value}, nil
+}
+
+func (p *parser) expressionStatement() (Stmt, error) {
+    value, err := p.expression()
+    if err != nil {
+        return nil, err
+    }
+    _, err = p.consume(tokens.Semicolon, "Expected ';' after expression.")
+    if err != nil {
+        return nil, err
+    }
+    return ExprStmt{Expression: value}, nil
+}
+
+func (p *parser) expression() (Expr, error) {
 	return p.equality()
 }
 
-func (p *Parser) equality() (Expr, error) {
+func (p *parser) equality() (Expr, error) {
 	expr, err := p.comparison()
     if err != nil {
         return expr, err
@@ -40,7 +86,7 @@ func (p *Parser) equality() (Expr, error) {
 	return expr, nil
 }
 
-func (p *Parser) comparison() (Expr, error) {
+func (p *parser) comparison() (Expr, error) {
 	expr, err := p.term()
     if err != nil {
         return expr, err
@@ -63,7 +109,7 @@ func (p *Parser) comparison() (Expr, error) {
 	return expr, nil
 }
 
-func (p *Parser) term() (Expr, error) {
+func (p *parser) term() (Expr, error) {
 	expr, err := p.factor()
     if err != nil {
         return expr, err
@@ -85,7 +131,7 @@ func (p *Parser) term() (Expr, error) {
 	return expr, nil
 }
 
-func (p *Parser) factor() (Expr, error) {
+func (p *parser) factor() (Expr, error) {
 	expr, err := p.unary()
     if err != nil {
         return expr, err
@@ -107,7 +153,7 @@ func (p *Parser) factor() (Expr, error) {
 	return expr, nil
 }
 
-func (p *Parser) unary() (Expr, error) {
+func (p *parser) unary() (Expr, error) {
 	if p.match(tokens.Bang, tokens.Minus) {
         op := p.previous().Type
         expr, err := p.unary()
@@ -122,7 +168,7 @@ func (p *Parser) unary() (Expr, error) {
 	return p.primary()
 }
 
-func (p *Parser) primary() (Expr, error) {
+func (p *parser) primary() (Expr, error) {
 
 	var expr Expr
 	if p.match(tokens.False) {
@@ -142,7 +188,7 @@ func (p *Parser) primary() (Expr, error) {
         if err != nil {
             return expr, err
         }
-		_ , err = p.consume(tokens.RightParen, "Expect ')' after expression")
+		_ , err = p.consume(tokens.RightParen, "Expected ')' after expression")
 		if err != nil {
             return nil, err
 		}
@@ -153,14 +199,14 @@ func (p *Parser) primary() (Expr, error) {
 
 // error handling
 
-func (p *Parser) consume(tpe tokens.TokenType, message string) (tokens.Token, error) {
+func (p *parser) consume(tpe tokens.TokenType, message string) (tokens.Token, error) {
 	if p.check(tpe) {
 		return p.advance(), nil
 	}
 	return p.advance(), &parseError{Token: p.advance(), Reason: message}
 }
 
-func (p *Parser) synchronize() {
+func (p *parser) synchronize() {
 	p.advance()
 	for !p.isAtEnd() {
 		if p.previous().Type == tokens.Semicolon {
@@ -177,7 +223,7 @@ func (p *Parser) synchronize() {
 
 // utilty methods
 
-func (p *Parser) match(types ...tokens.TokenType) bool {
+func (p *parser) match(types ...tokens.TokenType) bool {
 	for _, tokentype := range types {
 		if p.check(tokentype) {
 			p.advance()
@@ -187,29 +233,29 @@ func (p *Parser) match(types ...tokens.TokenType) bool {
 	return false
 }
 
-func (p Parser) check(tokentype tokens.TokenType) bool {
+func (p parser) check(tokentype tokens.TokenType) bool {
 	if p.isAtEnd() {
 		return false
 	}
 	return p.peek().Type == tokentype
 }
 
-func (p Parser) peek() tokens.Token {
+func (p parser) peek() tokens.Token {
 	return p.tokens[p.current]
 }
 
-func (p Parser) isAtEnd() bool {
+func (p parser) isAtEnd() bool {
 	return p.peek().Type == tokens.Eof
 }
 
-func (p *Parser) advance() tokens.Token {
+func (p *parser) advance() tokens.Token {
 	if !p.isAtEnd() {
 		p.current++
 	}
 	return p.previous()
 }
 
-func (p *Parser) previous() tokens.Token {
+func (p *parser) previous() tokens.Token {
 	return p.tokens[p.current-1]
 
 }

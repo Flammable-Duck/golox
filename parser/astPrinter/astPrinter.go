@@ -54,8 +54,22 @@ func (p *astPrinter) VisitBinary(b parser.Binary) interface{} {
     return str
 }
 
+func (p *astPrinter) VisitPrintStmt(psr parser.PrintStmt) interface{} {
+    return fmt.Sprintf("print %s\n", psr.Expression.Accept(p))
+}
+
+func (p *astPrinter) VisitExprStmt(exprStmt parser.ExprStmt) interface{} {
+    return exprStmt.Expression.Accept(p)
+}
+
+
+
 func PrintAst(expr parser.Expr)  {
     fmt.Printf("%s\n", expr.Accept(&astPrinter{}))
+}
+
+func PrintStmt(stmt parser.Stmt) {
+    fmt.Printf("%s\n", stmt.Accept(&astPrinter{}))
 }
 
 func indent(depth int) string{
