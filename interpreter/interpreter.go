@@ -2,42 +2,61 @@ package interpreter
 
 import (
 	"fmt"
+	"golox/interpreter/environment"
 	"golox/parser"
 	"golox/tokens"
 )
 
-func Interpret(statments []parser.Stmt) error {
-    var i interpreter
-    for _, stmt := range statments {
-        res := stmt.Accept(&i)
-        err, isError := res.(RuntimeException)
-        if isError {
-            return err
-        }
-        // fmt.Printf("\u001b[2m] %v\u001b[0m\n", res)
+type Interpreter struct {
+    env environment.Environment
+}
+
+func New() Interpreter {
+    return Interpreter{env: environment.New()}
+}
+
+func (i Interpreter) Interpret(stmt parser.Stmt)  (interface{}, error) {
+    res := stmt.Accept(i)
+    err, isError := res.(RuntimeException)
+    if isError {
+        return nil, err
     }
-    return nil
+    // fmt.Printf("\u001b[2m] %v\u001b[0m\n", res)
+    return res, nil
 }
 
-type interpreter struct {
-
-}
-
-func (i *interpreter) VisitPrintStmt(prnt parser.PrintStmt) interface{} {
+func (i Interpreter) VisitPrintStmt(prnt parser.PrintStmt) interface{} {
     value := prnt.Expression.Accept(i)
     fmt.Printf("%v\n", value)
     return nil
 }
 
-func (i *interpreter) VisitExprStmt(exprstmt parser.ExprStmt) interface{} {
+func (i Interpreter) VisitExprStmt(exprstmt parser.ExprStmt) interface{} {
     return exprstmt.Expression.Accept(i)
 }
 
-func (i *interpreter) VisitLiteral(l parser.Literal) interface{} {
+func (i Interpreter) VisitVarStmt(vr parser.Var) interface{} {
+    initalizer := vr.Initializer.Accept(i)
+    i.env.Define(vr.Name.Lexeme, initalizer)
+    return initalizer
+}
+
+func (i Interpreter) VisitVariable(v parser.Variable) interface{} {
+    val, err := i.env.Get(v.Name.Lexeme)
+    if err != nil {
+        return NewRuntimeException(err.Error())
+    }
+
+    return val
+}
+
+
+
+func (i Interpreter) VisitLiteral(l parser.Literal) interface{} {
     return l.Value
 }
 
-func (i *interpreter) VisitGrouping(g parser.Grouping) interface{} {
+func (i Interpreter) VisitGrouping(g parser.Grouping) interface{} {
     if res, isError := g.Expression.Accept(i).(RuntimeException); isError {
         return res.Add("at grouping: ")
     } else {
@@ -45,7 +64,7 @@ func (i *interpreter) VisitGrouping(g parser.Grouping) interface{} {
     }
 }
 
-func (i *interpreter) VisitUnary(u parser.Unary) interface{} {
+func (i Interpreter) VisitUnary(u parser.Unary) interface{} {
     right := u.Expression.Accept(i)
     if res, isError := right.(RuntimeException); isError {
         return res.Add(fmt.Sprintf("at %s: ", u.Operator.String()))
@@ -64,7 +83,7 @@ func (i *interpreter) VisitUnary(u parser.Unary) interface{} {
         u.Operator.String()))
 }
 
-func (i *interpreter) VisitBinary(b parser.Binary) interface{} {
+func (i Interpreter) VisitBinary(b parser.Binary) interface{} {
     left := b.Left.Accept(i)
     if res, isError := left.(RuntimeException); isError {
         return res.Add(fmt.Sprintf("at %s: ", b.Operator.String()))

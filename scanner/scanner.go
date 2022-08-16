@@ -7,14 +7,13 @@ import (
 )
 
 type Scanner struct {
-	src     []rune
-	tokens  []tokens.Token
-	errors  []error
-	start   int
-	current int
-    scanError struct {}
+	src       []rune
+	tokens    []tokens.Token
+	errors    []error
+	start     int
+	current   int
+	scanError struct{}
 }
-
 
 func NewScanner(source string) Scanner {
 	return Scanner{
@@ -168,10 +167,10 @@ func (s *Scanner) string() (tokens.Token, error) {
 	}
 	if s.isAtEnd() && s.peek() != '"' {
 		err = s.error("unterminated string")
-        return tokens.Token{}, err
+		return tokens.Token{}, err
 	} else {
-        s.advance()
-    }
+		s.advance()
+	}
 	value = string(s.src[s.start+1 : s.current-1])
 	tok := tokens.Token{
 		Position: s.getPosition(),
@@ -194,9 +193,9 @@ func (s *Scanner) number() (tokens.Token, error) {
 		s.advance()
 	}
 	// s.advance()
-    lexme := string(s.src[s.start:s.current])
-    var literal float64
-    literal, _ = strconv.ParseFloat(lexme, 64)
+	lexme := string(s.src[s.start:s.current])
+	var literal float64
+	literal, _ = strconv.ParseFloat(lexme, 64)
 
 	tok := tokens.Token{
 		Position: s.getPosition(),
@@ -226,6 +225,7 @@ func (s *Scanner) identifier() (tokens.Token, error) {
 		"super":  tokens.Super,
 		"this":   tokens.This,
 		"true":   tokens.True,
+		"var":    tokens.Var,
 		"while":  tokens.While,
 	}
 

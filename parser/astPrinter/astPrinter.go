@@ -62,7 +62,13 @@ func (p *astPrinter) VisitExprStmt(exprStmt parser.ExprStmt) interface{} {
     return exprStmt.Expression.Accept(p)
 }
 
+func (p *astPrinter) VisitVarStmt(vbr parser.Var) interface{} {
+    return fmt.Sprintf("var %s = %s", vbr.Name.Lexeme, vbr.Initializer.Accept(p))
+}
 
+func (p *astPrinter) VisitVariable(v parser.Variable) interface{} {
+    return fmt.Sprintf("%s", v.Name.Lexeme)
+}
 
 func PrintAst(expr parser.Expr)  {
     fmt.Printf("%s\n", expr.Accept(&astPrinter{}))

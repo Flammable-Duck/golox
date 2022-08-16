@@ -14,9 +14,8 @@ func Parse(tokens []tokens.Token) []Stmt {
     p := parser{tokens: tokens, current: 0}
     var statments []Stmt
     for !p.isAtEnd() {
-        stmt, err := p.statment()
+        stmt, err := p.declaration()
         if err != nil {
-            // fmt.Printf("%s\n", err.Error())
             fmt.Printf("\u001b[31m%s\u001b[39m\n", err.Error())
             p.synchronize()
         } else {
@@ -27,6 +26,33 @@ func Parse(tokens []tokens.Token) []Stmt {
 }
 
 // rules
+
+func (p *parser) declaration() (Stmt, error) {
+    if p.match(tokens.Var) {
+        return p.varDeclaration()
+    }
+        return p.statment()
+}
+
+func (p *parser) varDeclaration() (Stmt, error) {
+    name, err := p.consume(tokens.Identifier, "expected variable name.")
+    if err != nil {
+        return nil, err
+    }
+
+    var initializer Expr
+    if p.match(tokens.Equal) {
+        initializer, err = p.expression()
+        if err != nil {
+            return nil, err
+        }
+    }
+    _, err = p.consume(tokens.Semicolon, "Expected ';' after declaration.")
+    if err != nil {
+        return nil, err
+    }
+    return Var{Name:name, Initializer: initializer}, nil
+}
 
 func (p *parser) statment() (Stmt, error) {
     if p.match(tokens.Print) {
@@ -182,6 +208,9 @@ func (p *parser) primary() (Expr, error) {
 
 	} else if p.match(tokens.Number, tokens.String) {
 		expr = Literal{Value: p.previous().Literal}
+
+    } else if p.match(tokens.Identifier) {
+        expr = Variable{Name: p.previous()}
 
 	} else if p.match(tokens.LeftParen) {
         expr, err := p.expression()

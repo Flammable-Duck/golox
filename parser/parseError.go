@@ -18,7 +18,7 @@ func (e parseError) Error() string {
 			e.Reason)
 
 	} else {
-		return fmt.Sprintf("%d:%d parse error at '%s': %s",
+		return fmt.Sprintf("%d:%d parse error near '%s': %s",
 			e.Token.Position.Row,
 			e.Token.Position.Col,
 			e.Token.Lexeme,

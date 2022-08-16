@@ -12,7 +12,7 @@ import (
 	"os"
 )
 
-func run(input string) error {
+func run(input string, intrpr *interpreter.Interpreter) (interface{}, error) {
 	scan := scanner.NewScanner(input)
 	var toks []tokens.Token
 	for {
@@ -24,7 +24,7 @@ func run(input string) error {
 	}
 
 	// for _, t := range toks {
-	// 	fmt.Printf("token: %s:%s\n", t.Type.String(), t.Lexeme)
+	// 	fmt.Printf("token: %s: %s\n", t.Type.String(), t.Lexeme)
 	// }
 
 	if len(scan.Errors()) != 0 {
@@ -32,21 +32,27 @@ func run(input string) error {
 		for _, err := range scan.Errors() {
 			errs += err.Error() + "\n"
 		}
-		return fmt.Errorf(errs)
+		return nil, fmt.Errorf(errs)
 	}
 
 
 	stmts := parser.Parse(toks)
-    // for _, stmt := range stmts {
-    //     fmt.Printf("%v\n", stmt)
-    //     astPrinter.PrintStmt(stmt)
-    // }
+    var res interface{}
+    var err error
+    for _, stmt := range stmts {
+        // astPrinter.PrintStmt(stmt)
+        res, err = intrpr.Interpret(stmt)
+        if err != nil {
+            return nil, err
+        }
+    }
 
-	return interpreter.Interpret(stmts)
+	return res, nil
 }
 
 func runPrompt() {
 	s := bufio.NewScanner(os.Stdin)
+    intrpr := interpreter.New()
 	var line string = "\n"
 	for {
 		fmt.Print("> ")
@@ -55,11 +61,13 @@ func runPrompt() {
 			os.Exit(0)
 		}
 		line = s.Text()
-		err := run(line)
+		res, err := run(line, &intrpr)
 		if err != nil {
 			fmt.Println(err.Error())
-            // fmt.Printf("\u001b[2m%s\n", err.Error())
 		}
+        if res != nil {
+            fmt.Printf("\u001b[2m%v\u001b[22m\n", res)
+        }
 	}
 }
 
@@ -69,7 +77,8 @@ func runFile(fileName string) {
 		fmt.Print(err)
 	}
 
-	run(string(b))
+    intrpr := interpreter.New()
+	run(string(b), &intrpr)
 }
 
 func main() {
