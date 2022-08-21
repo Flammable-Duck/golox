@@ -11,98 +11,118 @@ type parser struct {
 }
 
 func Parse(tokens []tokens.Token) []Stmt {
-    p := parser{tokens: tokens, current: 0}
-    var statments []Stmt
-    for !p.isAtEnd() {
-        stmt, err := p.declaration()
-        if err != nil {
-            fmt.Printf("\u001b[31m%s\u001b[39m\n", err.Error())
-            p.synchronize()
-        } else {
-            statments = append(statments, stmt)
-        }
-    }
-    return statments
+	p := parser{tokens: tokens, current: 0}
+	var statments []Stmt
+	for !p.isAtEnd() {
+		stmt, err := p.declaration()
+		if err != nil {
+			fmt.Printf("\u001b[31m%s\u001b[39m\n", err.Error())
+			p.synchronize()
+		} else {
+			statments = append(statments, stmt)
+		}
+	}
+	return statments
 }
 
 // rules
 
 func (p *parser) declaration() (Stmt, error) {
-    if p.match(tokens.Var) {
-        return p.varDeclaration()
-    }
-        return p.statment()
+	if p.match(tokens.Var) {
+		return p.varDeclaration()
+	}
+	return p.statment()
 }
 
 func (p *parser) varDeclaration() (Stmt, error) {
-    name, err := p.consume(tokens.Identifier, "expected variable name.")
-    if err != nil {
-        return nil, err
-    }
+	name, err := p.consume(tokens.Identifier, "expected variable name.")
+	if err != nil {
+		return nil, err
+	}
 
-    var initializer Expr
-    if p.match(tokens.Equal) {
-        initializer, err = p.expression()
-        if err != nil {
-            return nil, err
-        }
-    }
-    _, err = p.consume(tokens.Semicolon, "Expected ';' after declaration.")
-    if err != nil {
-        return nil, err
-    }
-    return Var{Name:name, Initializer: initializer}, nil
+	var initializer Expr
+	if p.match(tokens.Equal) {
+		initializer, err = p.expression()
+		if err != nil {
+			return nil, err
+		}
+	}
+	_, err = p.consume(tokens.Semicolon, "Expected ';' after declaration.")
+	if err != nil {
+		return nil, err
+	}
+	return Var{Name: name, Initializer: initializer}, nil
 }
 
 func (p *parser) statment() (Stmt, error) {
-    if p.match(tokens.Print) {
-        return p.printStatement()
-    }
+	if p.match(tokens.Print) {
+		return p.printStatement()
+	}
 
-    res, err :=  p.expressionStatement()
-    return res, err
+	res, err := p.expressionStatement()
+	return res, err
 }
 
 func (p *parser) printStatement() (Stmt, error) {
-    value, err := p.expression()
-    if err != nil {
-        return nil, err
-    }
-    _, err = p.consume(tokens.Semicolon, "Expected ';' after expression.")
-    if err != nil {
-        return nil, err
-    }
+	value, err := p.expression()
+	if err != nil {
+		return nil, err
+	}
+	_, err = p.consume(tokens.Semicolon, "Expected ';' after expression.")
+	if err != nil {
+		return nil, err
+	}
 
-    return PrintStmt{Expression: value}, nil
+	return PrintStmt{Expression: value}, nil
 }
 
 func (p *parser) expressionStatement() (Stmt, error) {
-    value, err := p.expression()
-    if err != nil {
-        return nil, err
-    }
-    _, err = p.consume(tokens.Semicolon, "Expected ';' after expression.")
-    if err != nil {
-        return nil, err
-    }
-    return ExprStmt{Expression: value}, nil
+	value, err := p.expression()
+	if err != nil {
+		return nil, err
+	}
+	_, err = p.consume(tokens.Semicolon, "Expected ';' after expression.")
+	if err != nil {
+		return nil, err
+	}
+	return ExprStmt{Expression: value}, nil
 }
 
 func (p *parser) expression() (Expr, error) {
-	return p.equality()
+	return p.assignment()
+}
+
+func (p *parser) assignment() (Expr, error) {
+	expr, err := p.equality()
+	if p.match(tokens.Equal) {
+		equals := p.previous()
+		value, err := p.assignment()
+		if err != nil {
+			return nil, err
+		}
+		if expr, ok := expr.(Variable); ok {
+			return Assign{Name: expr.Name, Value: value}, nil
+		} else {
+			return nil, parseError{
+				Token:  equals,
+				Reason: "Invialid Assignment target."}
+		}
+	}
+
+	return expr, err
 }
 
 func (p *parser) equality() (Expr, error) {
 	expr, err := p.comparison()
-    if err != nil {
-        return expr, err
-    }
+	if err != nil {
+		return expr, err
+	}
 	for p.match(tokens.BangEqual, tokens.EqualEqual) {
-        op := p.previous().Type
-        right, err := p.comparison()
-        if err != nil {
-            return nil, err
-        }
+		op := p.previous().Type
+		right, err := p.comparison()
+		if err != nil {
+			return nil, err
+		}
 		expr = Binary{
 			Left:     expr,
 			Operator: op,
@@ -114,17 +134,17 @@ func (p *parser) equality() (Expr, error) {
 
 func (p *parser) comparison() (Expr, error) {
 	expr, err := p.term()
-    if err != nil {
-        return expr, err
-    }
+	if err != nil {
+		return expr, err
+	}
 
 	for p.match(tokens.Greater, tokens.GreaterEqual,
 		tokens.Less, tokens.LessEqual) {
-        op := p.previous().Type
-        right, err := p.comparison()
-        if err != nil {
-            return nil, err
-        }
+		op := p.previous().Type
+		right, err := p.comparison()
+		if err != nil {
+			return nil, err
+		}
 		expr = Binary{
 			Left:     expr,
 			Operator: op,
@@ -137,16 +157,16 @@ func (p *parser) comparison() (Expr, error) {
 
 func (p *parser) term() (Expr, error) {
 	expr, err := p.factor()
-    if err != nil {
-        return expr, err
-    }
+	if err != nil {
+		return expr, err
+	}
 
 	for p.match(tokens.Minus, tokens.Plus) {
-        op := p.previous().Type
-        right, err := p.factor()
-        if err != nil {
-            return nil, err
-        }
+		op := p.previous().Type
+		right, err := p.factor()
+		if err != nil {
+			return nil, err
+		}
 		expr = Binary{
 			Left:     expr,
 			Operator: op,
@@ -159,16 +179,16 @@ func (p *parser) term() (Expr, error) {
 
 func (p *parser) factor() (Expr, error) {
 	expr, err := p.unary()
-    if err != nil {
-        return expr, err
-    }
+	if err != nil {
+		return expr, err
+	}
 
 	for p.match(tokens.Slash, tokens.Star) {
-        op := p.previous().Type
-        right, err := p.unary()
-        if err != nil {
-            return nil, err
-        }
+		op := p.previous().Type
+		right, err := p.unary()
+		if err != nil {
+			return nil, err
+		}
 		expr = Binary{
 			Left:     expr,
 			Operator: op,
@@ -181,11 +201,11 @@ func (p *parser) factor() (Expr, error) {
 
 func (p *parser) unary() (Expr, error) {
 	if p.match(tokens.Bang, tokens.Minus) {
-        op := p.previous().Type
-        expr, err := p.unary()
-        if err != nil {
-            return nil, err
-        }
+		op := p.previous().Type
+		expr, err := p.unary()
+		if err != nil {
+			return nil, err
+		}
 		return Unary{
 			Operator:   op,
 			Expression: expr,
@@ -209,20 +229,20 @@ func (p *parser) primary() (Expr, error) {
 	} else if p.match(tokens.Number, tokens.String) {
 		expr = Literal{Value: p.previous().Literal}
 
-    } else if p.match(tokens.Identifier) {
-        expr = Variable{Name: p.previous()}
+	} else if p.match(tokens.Identifier) {
+		expr = Variable{Name: p.previous()}
 
 	} else if p.match(tokens.LeftParen) {
-        expr, err := p.expression()
-        if err != nil {
-            return expr, err
-        }
-		_ , err = p.consume(tokens.RightParen, "Expected ')' after expression")
+		expr, err := p.expression()
 		if err != nil {
-            return nil, err
+			return expr, err
+		}
+		_, err = p.consume(tokens.RightParen, "Expected ')' after expression")
+		if err != nil {
+			return nil, err
 		}
 	}
-    
+
 	return expr, nil
 }
 

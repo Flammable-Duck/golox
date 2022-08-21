@@ -23,3 +23,16 @@ func (env Environment) Get(name string) (interface{}, error) {
     }
     return val, nil
 }
+
+func (env Environment) Assign(name string, value interface{}) error {
+    if env.Exists(name) {
+        env.values[name] = value
+        return nil
+    }
+    return fmt.Errorf("undefined variable, '%s'", name)
+}
+
+func (env Environment) Exists(name string) bool {
+    _, exists := env.values[name]
+    return exists
+}

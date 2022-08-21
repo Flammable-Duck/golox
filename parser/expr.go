@@ -13,6 +13,7 @@ type ExprVisitor interface {
 	VisitGrouping(g Grouping) interface{}
 	VisitUnary(u Unary) interface{}
 	VisitBinary(b Binary) interface{}
+	VisitAssign(a Assign) interface{}
     VisitVariable(v Variable) interface{}
 }
 
@@ -49,6 +50,15 @@ type Binary struct {
 
 func (b Binary) Accept(v ExprVisitor) interface{} {
 	return v.VisitBinary(b)
+}
+
+type Assign struct {
+    Name tokens.Token
+    Value Expr
+}
+
+func (a Assign) Accept(v ExprVisitor) interface{} {
+    return v.VisitAssign(a)
 }
 
 type Variable struct {

@@ -35,6 +35,14 @@ func (i Interpreter) VisitExprStmt(exprstmt parser.ExprStmt) interface{} {
     return exprstmt.Expression.Accept(i)
 }
 
+func (i Interpreter) VisitAssign(ass parser.Assign) interface{} {
+    val := ass.Value.Accept(i)
+    if err := i.env.Assign(ass.Name.Lexeme, val); err != nil {
+        return NewRuntimeException(err.Error())
+    }
+    return val
+}
+
 func (i Interpreter) VisitVarStmt(vr parser.Var) interface{} {
     initalizer := vr.Initializer.Accept(i)
     i.env.Define(vr.Name.Lexeme, initalizer)
