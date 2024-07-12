@@ -60,14 +60,17 @@ func runPrompt() {
 		if len(s.Bytes()) == 0 {
 			os.Exit(0)
 		}
-		line = s.Text()
+		line = s.Text() + ";"
 		res, err := run(line, &intrpr)
 		if err != nil {
-			// fmt.Println(err.Error())
 			fmt.Printf("\u001b[31m%s\u001b[39m\n", err.Error())
 		}
-        if res != nil {
-            fmt.Printf("\u001b[2m%v\u001b[22m\n", res)
+        switch v := res.(type) {
+            case string:
+                fmt.Printf("\u001b[2m\"%s\"\u001b[22m\n", v)
+            case nil:
+            default:
+                fmt.Printf("\u001b[2m%v\u001b[22m\n", v)
         }
 	}
 }
